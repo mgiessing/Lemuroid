@@ -1,62 +1,36 @@
-name: Publish
+name: Build APK
 
 on:
-  push:
-    tags:
-      - "*"
-      
   workflow_dispatch:
 
 jobs:
-
   build:
     name: Build APK
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout PR
+        uses: actions/checkout@v3
         with:
+          repository: Swordfish90/Lemuroid
+          ref: refs/pull/1115/head
           submodules: recursive
 
-      - name: set up JDK 17
+      - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
           cache: gradle
 
-      - name: Create release keystore
-        run: |
-          echo "${{ secrets.RELEASE_KEYSTORE }}" > release.keystore.asc
-          gpg -d --passphrase "${{ secrets.RELEASE_KEYSTORE_PASSPHRASE }}" --batch release.keystore.asc > release.jks
-
-      - name: Grant execute permission for gradlew
+      - name: Grant execute permission
         run: chmod +x gradlew
 
-      - name: Run Assemble Artifact
-        run: ./gradlew assembleFreeDynamic
+      - name: Build debug APK
+        run: ./gradlew assembleFreeDynamicDebug
 
-      - name: Upload Artifact
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: apk
-          path: lemuroid-app/build/outputs/apk/freeDynamic/release/lemuroid-app-free-dynamic-release.apk
-
-  publish_apk:
-    name: Publish APK on Github
-    needs: [ build ]
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Download Artifact
-        uses: actions/download-artifact@v3.0.0
-        with:
-          name: apk
-
-      - name: Create pre-release
-        uses: "marvinpinto/action-automatic-releases@latest"
-        with:
-          repo_token: "${{ secrets.GITHUB_TOKEN }}"
-          prerelease: true
-          title: "Pre-release"
-          files: lemuroid-app-free-dynamic-release.apk
+          name: lemuroid-apk
+          path: lemuroid-app/build/outputs/apk/freeDynamic/debug/*.apk
